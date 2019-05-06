@@ -1,0 +1,610 @@
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <title>Project 1 Olympic Trivia</title>
+</head>
+<style>
+  p {
+    font-family: "Arial";
+    font-size: 12pt;
+    color: #2A2A2A;
+    margin: 60px 60px 60px 60px;
+    line-height: 2;
+  }
+
+  svg {
+    font-family: "Arial";
+    font-size: 10pt;
+    display: block;
+    margin: auto;
+    left: 50%;
+  }
+
+  span {
+    margin-right: 10px;
+  }
+
+  div {
+    font-family: "Helvetica";
+    font-size: 12pt;
+    margin: 20 auto;
+    text-align: center;
+  }
+
+  body {
+    font: 10px sans-serif;
+  }
+
+  .xAxis path {
+    fill: none;
+    stroke: white;
+    shape-rendering: crispEdges;
+  }
+
+  .axis line {
+    fill: none;
+    stroke: white;
+    shape-rendering: crispEdges;
+  }
+
+  .xticks path {
+    display: none;
+  }
+
+  .xticks line {
+    display: none;
+  }
+
+  .xticks text {
+    fill: white;
+  }
+
+  body {
+    background-color: #a2dfe4;
+  }
+</style>
+
+<body>
+  <p id="title">
+    <center>
+      <h1>
+        <font color=" white" size="6">~ Olympic Trivia ~</font>
+      </h1>
+    </center>
+    <div style="margin-left:10px; line-height:13px;">
+      <font color="white" size="3"><br>Looking into the 123-year history of
+        Olympics, we would like to share some interesting discoveries
+        using data visualization. <br></font>
+    </div>
+    <center>
+      <h2>
+        <font color=" white" size="4">
+          <br><br><br><br><b>~ Changes in Number of Participated Athletes in the Countries'
+            First and Latest Summer Olympics ~</b></font>
+      </h2>
+    </center>
+  </p>
+  <p id="map">
+    <script>
+      var AthletesData;
+      var Country;
+      var location;
+      Promise.all([d3.json("./World.geojson"), d3.csv("./athlete_events.csv"), d3.json("./popular.geojson"), d3.csv("./noc_regions.csv"), d3.csv("./Trans.csv")]).then(function(data) {
+        Country = data[0];
+        AthletesData = data[1];
+        var list = {};
+
+        Country.features.forEach((d, i) => {
+          list[d.id] = [0, 0];
+        });
+        console.log(Country);
+        console.log(data[4]);
+        Country.features.forEach((d, i) => {
+          let len = d.geometry.coordinates[0].length;
+          let len2 = d.geometry.coordinates.length;
+          if (len2 == 1) {
+            for (let i = 0; i < len; i++) {
+              list[d.id][0] += d.geometry.coordinates[0][i][0];
+              list[d.id][1] += d.geometry.coordinates[0][i][1];
+            }
+            list[d.id][0] = list[d.id][0] / len;
+            list[d.id][1] = list[d.id][1] / len;
+          } else if (d.id == "ZAF") {
+            for (let i = 0; i < len; i++) {
+              list[d.id][0] += d.geometry.coordinates[0][i][0];
+              list[d.id][1] += d.geometry.coordinates[0][i][1];
+            }
+            list[d.id][0] = list[d.id][0] / len;
+            list[d.id][1] = list[d.id][1] / len;
+          } else {
+            let index = 0;
+            let max = 0;
+            for (let i = 0; i < len2; i++)
+              if (d.geometry.coordinates[i][0].length >= max) {
+                max = d.geometry.coordinates[i][0].length;
+                index = i;
+              }
+            for (let i = 0; i < max; i++) {
+              list[d.id][0] += d.geometry.coordinates[index][0][i][0];
+              list[d.id][1] += d.geometry.coordinates[index][0][i][1];
+            }
+
+            list[d.id][0] = list[d.id][0] / max;
+            list[d.id][1] = list[d.id][1] / max;
+          }
+        });
+
+        Object.size = function(obj) {
+          var size = 0,
+            key;
+          for (key in obj) {
+            if (obj.hasOwnProperty(key)) size++;
+          }
+          return size;
+        };
+        var size = Object.size(list);
+
+        let svg = d3.select("#map").append("svg")
+          .attr("width", "1300")
+          .attr("height", "800");
+        let svgwidth = svg.attr("width");
+        let svgheight = svg.attr("height");
+        let svgmargin = {
+          "top": 10,
+          "right": 10,
+          "bottom": 10,
+          "left": 10
+        };
+        let chartWidth = svgwidth - svgmargin.right - svgmargin.left;
+        let chartHeight = svgheight - svgmargin.top - svgmargin.bottom;
+
+
+        var projection = d3.geoEqualEarth().rotate([-25, 0, 0]).fitSize([chartWidth, chartHeight], Country);
+        var path = d3.geoPath().projection(projection);
+
+
+        svg.append("path")
+          .attr("transform", "translate(" + svgmargin.left + "," + svgmargin.top + ")")
+          .attr("class", "map")
+          .attr("d", path(Country))
+          .attr("fill", "white")
+          .attr("opacity", 0.9);
+
+        svg.append("path")
+          .attr("transform", "translate(" + svgmargin.left + "," + svgmargin.top + ")")
+          .attr("class", "map")
+          .attr("d", path(Country))
+          .attr("stroke-width", 0.8)
+          .attr("stroke", "#a2dfe4")
+          .attr("fill", "none")
+          .attr("opacity", 1.0);
+
+
+
+        AthletesData.forEach((d, i) => {
+          d['Year'] = Number(d['Year']);
+          for (let k = 0; k < data[4].length; k++) {
+            if (d['NOC'] === data[4][k].IOC) {
+              d['NOC'] = data[4][k].ISO;
+            }
+          }
+        });
+        var Min = {};
+        var Max = {};
+        var len = AthletesData.length;
+        for (let i = 0; i < len; i++) {
+          if (Min[AthletesData[i].NOC] == undefined) {
+            Min[AthletesData[i].NOC] = 9999;
+            Max[AthletesData[i].NOC] = 0;
+          }
+          if (Min[AthletesData[i].NOC] != undefined && Min[AthletesData[i].NOC] > AthletesData[i].Year) {
+            Min[AthletesData[i].NOC] = AthletesData[i].Year;
+          }
+          if (Max[AthletesData[i].NOC] != undefined && Max[AthletesData[i].NOC] < AthletesData[i].Year) {
+            Max[AthletesData[i].NOC] = AthletesData[i].Year;
+          }
+        }
+        var Mincount = {};
+        var Maxcount = {};
+        AthletesData.forEach((d, i) => {
+          if (Mincount[d.NOC] == undefined)
+            Mincount[d.NOC] = 0;
+          if (Maxcount[d.NOC] == undefined)
+            Maxcount[d.NOC] = 0;
+          if (Min[d.NOC] == d.Year)
+            Mincount[d.NOC]++;
+          if (Max[d.NOC] == d.Year)
+            Maxcount[d.NOC]++;
+        });
+
+        let min = 9999;
+        let max = 0;
+        for (let key in Mincount) {
+          if (Mincount[key] > max && list[key] != undefined) max = Mincount[key];
+          if (Mincount[key] < min && list[key] != undefined) min = Mincount[key];
+        }
+        let formScale = d3.scaleLinear().domain([min, max]).range([1, 40]);
+        let a = 9999;
+        let b = 0;
+        let cant = [];
+        for (let key in Maxcount) {
+          if (Maxcount[key] > b && list[key] != undefined) b = Maxcount[key];
+          if (Maxcount[key] < a && list[key] != undefined) a = Maxcount[key];
+          if (list[key] == undefined) cant.push({
+            name: key,
+            year: Max[key]
+          })
+        }
+        let laterScale = d3.scaleLinear().domain([a, b]).range([1, 40]);
+        console.log(Maxcount);
+        for (let key in list) {
+          svg.append("circle")
+            .attr("transform", "translate(" + svgmargin.left + "," + svgmargin.top + ")")
+            .attr("r", laterScale(Maxcount[key]))
+            .attr("cx", projection(list[key])[0])
+            .attr("cy", projection(list[key])[1])
+            .attr("fill", "#ff9d76")
+            .attr("opacity", 0.5);
+          svg.append("circle")
+            .attr("transform", "translate(" + svgmargin.left + "," + svgmargin.top + ")")
+            .attr("r", laterScale(Mincount[key]))
+            .attr("cx", projection(list[key])[0])
+            .attr("cy", projection(list[key])[1])
+            .attr("fill", "#774898")
+            .attr("opacity", 0.4);
+        }
+        svg.append("circle")
+          .attr("cx", chartWidth - 23)
+          .attr("cy", 42)
+          .attr("r", 9)
+          .attr("opacity", 0.9)
+          .style("fill", "#774898");
+
+        svg.append("circle")
+          .attr("cx", chartWidth - 23)
+          .attr("cy", 9)
+          .attr("r", 9)
+          .attr("opacity", 0.9)
+          .style("fill", "#ff9d76");
+
+        svg.append("text")
+          .attr("x", chartWidth - 39)
+          .attr("y", 9)
+          .attr("fill", "white")
+          .attr("dy", ".35em")
+          .style("text-anchor", "end")
+          .text("Number of Participated Athletes in its Latest Olympics");
+
+        svg.append("text")
+          .attr("x", chartWidth - 39)
+          .attr("y", 42)
+          .attr("fill", "white")
+          .attr("dy", ".35em")
+          .style("text-anchor", "end")
+          .text("Number of Participated Athletes in its First Olympics");
+
+      });
+
+      var width = 960,
+        height = 700,
+        barHeight = height / 2 - 40;
+
+      var formatNumber = d3.format("s");
+
+      var color = d3.scaleOrdinal()
+        .range(["#ff9d76", "#7b6888"]);
+
+      var color2 = d3.scaleOrdinal()
+        .range(["#f2f2f2", "#d6d6d6"]);
+
+      var title2 = d3.select('body').append("div")
+        .style("color", "white")
+
+      title2.append("text")
+        .style("fill", "white")
+        .style("text-anchor", "middle")
+        .style("font-weight", "bold")
+        .style("font-size", "18")
+        .text("~ Will a country win more medals when it holds the Olympics? ~");
+
+      var svg = d3.select('body').append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+      var olm;
+      let percent = {};
+      d3.csv("./summer.csv").then(function(data) {
+        olm = data;
+        console.log(olm);
+        olm.forEach((d, i) => {
+          if (percent[d.Host] == undefined)
+            percent[d.Host] = [{
+              host: 0,
+              hosttotal: 0,
+              nonhost: 0,
+              nonhosttotal: 0,
+              hpr: 0,
+              nonhpr: 0,
+              hnum: 0,
+              nonhnum: 0,
+              name: null
+            }];
+
+        });
+        for (let y = 1896; y <= 2016; y += 4) {
+          let hostname;
+          olm.forEach((d, i) => {
+            if (d.Year == y) {
+              if (d.Host == d.Country) {
+                percent[d.Host][0].host++;
+                hostname = d.Host;
+              }
+              if ((d.Host != d.Country) && percent[d.Country] != undefined)
+                percent[d.Country][0].nonhost++;
+              percent[d.Host][0].hosttotal++;
+            }
+          });
+
+          if (hostname != undefined) {
+
+            for (let item in percent) {
+              if (item == hostname) {
+                percent[item][0].hpr += percent[item][0].host / percent[item][0].hosttotal;
+                percent[item][0].hnum += 1;
+              } else if (item != hostname && percent[item][0].nonhost != 0) {
+                percent[item][0].nonhpr += percent[item][0].nonhost / percent[hostname][0].hosttotal;
+                percent[item][0].nonhnum += 1;
+              }
+            }
+            for (let clean in percent) {
+              percent[clean][0].host = 0;
+              percent[clean][0].hosttotal = 0;
+              percent[clean][0].nonhost = 0;
+              percent[clean][0].nonhosttotal = 0;
+            }
+          }
+        }
+        for (let final in percent) {
+          percent[final][0].hpr = percent[final][0].hpr / percent[final][0].hnum * 100;
+          percent[final][0].nonhpr = percent[final][0].nonhpr / percent[final][0].nonhnum * 100;
+          percent[final][0].name = final;
+        }
+
+
+
+        var obj = [];
+        for (let item in percent) {
+          var keyvalue = {};
+          keyvalue["state"] = percent[item][0].name
+          var lst = [];
+          var ukv = {};
+          ukv["name"] = "Host";
+          //ukv["value"] = percent[item][0].hpr/100;
+          ukv["value"] = percent[item][0].hpr / (percent[item][0].hpr + percent[item][0].nonhpr);
+          lst.push(ukv);
+          var nkv = {};
+          nkv["name"] = "Not Host";
+          //nkv["value"] = percent[item][0].nonhpr/100;
+          nkv["value"] = percent[item][0].nonhpr / (percent[item][0].hpr + percent[item][0].nonhpr);
+          lst.push(nkv);
+          keyvalue["rate"] = lst;
+          obj.push(keyvalue);
+        }
+
+        data = obj;
+        var statesNames = data.map(function(d) {
+          return d.state;
+        });
+        var rateNames = data[0].rate.map(function(d) {
+          return d.name;
+        });
+
+        var barScale = d3.scaleLinear()
+          .domain([-0.2, d3.max(data, function(d) {
+            return d3.max(d.rate, function(d) {
+              return d.value;
+            });
+          })])
+          .range([0, barHeight]);
+
+        var numBarsStates = statesNames.length;
+        var numBarsRates = rateNames.length;
+
+        var x = d3.scaleLinear()
+          .domain([-0.2, d3.max(data, function(d) {
+            return d3.max(d.rate, function(d) {
+              return d.value;
+            });
+          })])
+          .range([0, -barHeight]);
+
+
+        var circles = svg.selectAll("circle")
+          .data(x.ticks(5))
+          .enter().append("circle")
+          .attr("r", function(d) {
+            return barScale(d);
+          })
+          .style("fill", "none")
+          .style("stroke", "white")
+          .style("stroke-dasharray", "2,2")
+          .style("stroke-width", "1px");
+
+        var states = svg.selectAll(".state")
+          .data(data)
+          .enter().append("g")
+          .attr("class", "state")
+          .attr("transform", function(d, i) {
+            return "rotate(" + (i * 360 / numBarsStates) + ")";
+          });
+
+        var states2 = svg.selectAll(".state2")
+          .data(data)
+          .enter().append("g")
+          .attr("class", "state")
+          .attr("transform", function(d, i) {
+            return "rotate(" + (i * 360 / numBarsStates) + ")";
+          });
+
+        var arc = d3.arc()
+          .startAngle(function(d, i) {
+            return (i * 2 * Math.PI) / (numBarsRates * numBarsStates);
+          })
+          .endAngle(function(d, i) {
+            return ((i + 1) * 2 * Math.PI) / (numBarsRates * numBarsStates);
+          })
+          .innerRadius(52);
+
+
+        var arcback = d3.arc()
+          .startAngle(function(d, i) {
+            return (i * 2 * Math.PI) / (numBarsRates * numBarsStates);
+          })
+          .endAngle(function(d, i) {
+            return ((i + 2) * 2 * Math.PI) / (numBarsRates * numBarsStates);
+          })
+          .innerRadius(52);
+        let k;
+        var segments = states2.selectAll("path")
+          .data(function(d, i) {
+            k = i;
+            return [d.rate];
+          })
+          .enter().append("path")
+          .each(function(d) {
+            d.outerRadius = barScale(1);
+          })
+          .attr("opacity", function(d, i) {
+            if (k % 2 == 0) return 0.2;
+            else return 0;
+          })
+          .style("fill", "white")
+          .attr("d", arcback);
+
+        var segments = states.selectAll("path")
+          .data(function(d) {
+            return d.rate;
+          })
+          .enter().append("path")
+          .each(function(d) {
+            d.outerRadius = barScale(d.value);
+          })
+          .style("fill", function(d) {
+            return color(d.name);
+          })
+          .attr("d", arc)
+          .attr("opacity", 0.8);
+
+        svg.append("circle")
+          .attr("r", barScale(1))
+          .classed("outer", true)
+          .style("fill", "none")
+          .style("stroke", "white")
+          .style("stroke-width", "1.5px");
+
+
+
+        var formatPercent = d3.format(".0%");
+        let xAxis = d3.axisLeft(x).ticks(5, d3.format(formatPercent));
+        svg.append("g").attr("stroke", "none").attr("class", "xticks").call(xAxis);
+
+        // Labels
+        var labelRadius = barHeight * 1.025;
+
+        var labels = svg.append("g")
+          .classed("labels", true);
+
+        labels.append("def")
+          .append("path")
+          .attr("id", "label-path")
+          .attr("d", "m0 " + -labelRadius + " a" + labelRadius + " " + labelRadius + " 0 1,1 -0.01 0");
+
+        labels.selectAll("text")
+          .data(statesNames)
+          .enter().append("text")
+          .style("text-anchor", "middle")
+          .style("font-weight", "bold")
+          .style("fill", function(d, i) {
+            return "white";
+          })
+          .append("textPath")
+          .attr("xlink:href", "#label-path")
+          .attr("startOffset", function(d, i) {
+            return i * 100 / numBarsStates + 50 / numBarsStates + '%';
+          })
+          .text(function(d) {
+            return d.toUpperCase();
+          });
+
+
+        var circles2 = svg.append("circle")
+          .attr("r", barScale(0))
+          .style("fill", "#a2dfe4")
+          .style("stroke", "white")
+          .style("stroke-width", "2px");
+
+        // legend
+        var legend = svg.selectAll(".legend")
+          .data(rateNames.slice())
+          .enter().append("g")
+          .attr("class", "legend")
+          .attr("transform", function(d, i) {
+            return "translate(" + -width / 2 + "," + (-(height / 2 - 20) + (i * 20)) + ")";
+          });
+
+        states.selectAll("line")
+          .data(function(d) {
+            return d.rate;
+          })
+          .enter().append("line")
+          .attr("y2", function(d, i) {
+            console.log(i);
+            return i === 0 ? -barHeight - 20 : 0;
+          })
+          .style("stroke", "white")
+          .style("stroke-width", function(d, i) {
+            return i === 0 ? "1.5px" : "0px";
+          })
+          .attr("transform", function(d, i) {
+            return "rotate(" + (i * 360 / (numBarsRates * numBarsStates)) + ")";
+          });
+
+        legend.append("rect")
+          .attr("x", width - 33)
+          .attr("width", 18)
+          .attr("height", 18)
+          .style("fill", color);
+
+        legend.append("text")
+          .attr("x", width - 39)
+          .attr("y", 9)
+          .attr("fill", "white")
+          .attr("dy", ".35em")
+          .style("text-anchor", "end")
+          .text(function(d) {
+            return d;
+          });
+
+
+
+      });
+    </script>
+
+  </p>
+  <p id="notes">
+    <div style="margin-right:20px; line-height:13px; text-align: right">
+      <font color="white" size="2"><br> Note: We calculated that on average
+        what percentage of medals each country won in the Olympics held by them
+        versus those not held by them. <br><br>
+        The two bars for each country in this graph show the ratio
+        between the two percentages. <br>
+      </font>
+    </div>
+  </p>
+</body>
+
+</html>
